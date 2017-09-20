@@ -1,0 +1,72 @@
+/*
+ * Copyright (C) 2017 Bitvana LLC
+ *
+ * compile: dtc -O dtb -o BITVANA-XBC1-00A0.dtbo -b 0 -@ BITVANA-XBC1.dts
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+    /* identification */
+    part-number = "BITVANA-XBC1";
+    version = "00A0";
+
+    /* state the resources this cape uses */
+    exclusive-use =
+        "P8.37",  /* uart5_txd */
+        "P8.38",  /* uart5_rxd */
+        "P8.41",  /* modem reset */
+        "P9.14",  /* powerEnable */
+        "P9.42",  /* modem on/off */
+        "uart5";
+
+    fragment@0 {
+        target = <&am33xx_pinmux>;
+        __overlay__ {
+            bb_uart5_pins: pinmux_bb_uart5_pins {
+                pinctrl-single,pins = <
+                    0x0C0 0x0C  /* P8.37, output, pull disabled, mode4 = lcd_data8.uart5_txd */
+                    0x0C4 0x2C  /* P8.38, input, pull disabled, mode4 = lcd_data9.uart5_rxd */
+                >;
+            };
+            pinctrl_bitvana: pinmux_bitvana_xbc1_pins {
+                pinctrl-single,pins = <
+                    0x0B0 0x17  /* P8.41, output, pull up, mode7 = gpio2_10 */
+                    0x048 0x07  /* P9.14, output, pull down, mode7 = gpio1_18 */
+                    0x164 0x07  /* P9.42, output, pull down, mode7 = gpio0_7 */
+					
+                    /* OUTPUT  GPIO(mode7) 0x07 pulldown, 0x17 pullup, 0x?f no pullup/down */
+                    /* INPUT   GPIO(mode7) 0x27 pulldown, 0x37 pullup, 0x?f no pullup/down */
+                >;
+            };
+
+        };
+    };
+
+    fragment@1 {
+        target = <&uart5>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <&bb_uart5_pins>;
+        };
+    };
+
+    fragment@2 {
+        target = <&ocp>;
+        __overlay__ {
+            test_helper: helper {
+                compatible = "bone-pinmux-helper";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_bitvana>;
+                status = "okay";
+            };
+        };
+    };
+};
